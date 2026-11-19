@@ -27,7 +27,13 @@ st.markdown(
       [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {display: none !important;}
       .block-container {padding: 0 !important; max-width: 100% !important;}
       [data-testid="stAppViewContainer"] {padding: 0 !important;}
-      iframe {display: block; border: 0;}
+      /* 육아노트 화면을 브라우저 창 크기에 꽉 맞춤 (아래 공백 없음) */
+      iframe {
+        position: fixed !important; inset: 0 !important;
+        width: 100vw !important; height: 100vh !important; height: 100dvh !important;
+        border: 0 !important; z-index: 999990; background: #F3F7FA;
+      }
+      html, body, [data-testid="stApp"] {overflow: hidden !important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -100,7 +106,7 @@ def load_page() -> tuple[str, dict | None, str]:
     return html.replace(MARK, fam, 1), data, status
 
 
-# 화면 높이: 주소 뒤에 ?h=1000 처럼 붙이면 바꿀 수 있어요 (기본 860).
+# 화면 높이는 위 CSS로 창 크기에 자동으로 맞춰져요. (아래 값은 CSS가 적용되기 전 잠깐 쓰는 기본값)
 try:
     height = int(st.query_params.get("h", 860))
 except (TypeError, ValueError):
