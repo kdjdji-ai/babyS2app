@@ -1666,18 +1666,23 @@ function openFamily(){
    <p class="note" id="famMsg" role="status">누르면 이 페이지가 새 버전으로 저장되고 잠시 새로고침돼요.</p>
    <div class="block" style="margin-top:6px"><h3>🔗 링크 보내는 방법 <small>처음 한 번만</small></h3><ol class="steps"><li><b>PC 웹(claude.ai)이나 데스크톱 앱</b>에서 이 페이지를 열고 오른쪽 위 <b>Share(공유)</b>를 눌러요. 휴대폰 앱에서는 공유 설정을 바꿀 수 없어요.</li><li><b>링크가 있는 모든 사람</b>을 고르고 <b>항상 최신 버전</b>을 켜요.</li><li><b>링크 복사</b> → 카톡이나 문자로 가족에게 보내요.</li><li>가족은 claude.ai에서 무료 가입(구글 계정 가능) 후 링크를 열어요.</li></ol><p class="note">이후에는 기록하고 ‘가족 화면 업데이트하기’만 누르면 같은 링크에서 바로 바뀌어요.</p></div>
    <p class="note">⚠️ 링크를 가진 사람은 누구나 아이 이름·생년월일·성장 기록을 볼 수 있어요. 가족 단톡방처럼 믿을 수 있는 곳에만 보내 주세요. 아이 이름 대신 애칭을 쓰면 더 안전해요.</p>
-   <div class="block" style="margin-top:6px"><h3>🌐 가입 없이 보는 웹 (GitHub · Streamlit) <small>선택</small></h3><p class="muted" style="margin:0 0 10px">가족이 Claude 가입 없이 보게 하려면 이 파일을 GitHub 저장소의 family.json에 덮어써 올리세요. 1~2분 뒤 Streamlit 앱에 반영돼요.</p><button class="btn" id="famJson" style="width:100%">📦 family.json 저장</button><p class="note" id="famJsonMsg" role="status"></p></div>
+   <div class="block" style="margin-top:6px"><h3>🌐 가입 없이 보는 웹 (Streamlit) <small>선택</small></h3><p class="muted" style="margin:0 0 10px">Streamlit 앱의 <b>Settings → Secrets</b>에 아래 내용을 통째로 붙여 넣고 저장하면 1분 안에 가족 화면이 바뀌어요. 아이 기록은 GitHub에 올라가지 않아요.</p><div class="row"><button class="btn" id="famSecCopy" style="flex:1">📋 Secrets 내용 복사</button><button class="btn ghost" id="famJson">💾 파일로 저장</button></div><textarea id="famSecTxt" rows="4" readonly style="margin-top:10px;font-size:12px;font-family:ui-monospace,Menlo,monospace" hidden></textarea><p class="note" id="famJsonMsg" role="status"></p></div>
    ${FAM?`<button class="btn ghost danger" id="famOff" style="width:100%">가족 화면 끄기 (공유 데이터 지우기)</button>`:""}
    <button class="btn ghost" id="famClose" style="width:100%;margin-top:8px">닫기</button>`;
   $$("[data-famkid]").forEach(c=>c.onchange=()=>{famOpts.ids=$$("[data-famkid]").filter(x=>x.checked).map(x=>x.dataset.famkid);});
   $("#famMemo").onchange=e=>{famOpts.memo=e.target.checked;};
   $("#famGo").onclick=()=>{if(!famOpts.ids.length){$("#famMsg").textContent="보여 줄 아이를 한 명 이상 골라 주세요.";return;}famPublish(JSON.stringify(famSnapshot()).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029"));};
   if($("#famOff"))$("#famOff").onclick=()=>famPublish("null");
+  const Q3="'"+"'"+"'";
+  const secText=()=>{const j=JSON.stringify(famSnapshot()).split(Q3).join("\\u0027\\u0027\\u0027");return"FAMILY_JSON = "+Q3+"\n"+j+"\n"+Q3+"\n";};
+  $("#famSecCopy").onclick=async()=>{const m=$("#famJsonMsg");if(!famOpts.ids.length){m.textContent="보여 줄 아이를 한 명 이상 골라 주세요.";return;}const t=secText();const ta=$("#famSecTxt");ta.value=t;ta.hidden=false;
+    try{await navigator.clipboard.writeText(t);m.textContent="✅ 복사했어요. Streamlit → Manage app → Settings → Secrets에 붙여 넣고 Save를 눌러 주세요.";}
+    catch(_){ta.focus();ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(__){}m.textContent=ok?"✅ 복사했어요. Streamlit Secrets에 붙여 넣어 주세요.":"복사가 막혀 있어요. 위 칸을 길게 눌러 전체 선택 → 복사해 주세요.";}};
   $("#famJson").onclick=async()=>{const m=$("#famJsonMsg");if(!famOpts.ids.length){m.textContent="보여 줄 아이를 한 명 이상 골라 주세요.";return;}
-    const blob=new Blob([JSON.stringify(famSnapshot(),null,1)],{type:"application/json"});
+    const blob=new Blob([secText()],{type:"text/plain"});
     let dl=null;if(window.claude&&claude.use){try{dl=await claude.use("downloads");}catch(_){}}
-    if(dl){try{await dl.save({filename:"family.json",data:blob});m.textContent="✅ 저장했어요. GitHub 저장소의 family.json을 이 파일로 바꿔 올려 주세요.";}catch(e){m.textContent=e&&e.code==="declined"?"저장을 취소했어요.":"이 화면에서는 파일 저장을 할 수 없어요.";}return;}
-    try{const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="family.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);m.textContent="✅ 저장을 시작했어요.";}catch(_){m.textContent="이 화면에서는 파일 저장을 할 수 없어요.";}};
+    if(dl){try{await dl.save({filename:"streamlit-secrets.txt",data:blob});m.textContent="✅ 저장했어요. 파일 내용을 Streamlit Secrets에 붙여 넣어 주세요.";}catch(e){m.textContent=e&&e.code==="declined"?"저장을 취소했어요.":"이 화면에서는 파일 저장을 할 수 없어요.";}return;}
+    try{const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="streamlit-secrets.txt";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);m.textContent="✅ 저장을 시작했어요.";}catch(_){m.textContent="이 화면에서는 파일 저장을 할 수 없어요.";}};
   $("#famClose").onclick=closeSheets;
   openSheet("#famSheet");
 }
