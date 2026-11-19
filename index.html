@@ -1702,7 +1702,7 @@ function head(t,meta){return`<div class="vh"><h2>${t}</h2><span class="meta">${e
 function emptyProfile(){return`<div class="block empty"><p>성별과 생년월일을 입력하면 이 화면이 아이에게 맞게 채워져요.</p><button class="btn leaf js-profile">아이 정보 입력</button></div>`;}
 const VIEWS={growth:viewGrowth,play:viewPlay,health:viewHealth,food:viewFood,map:viewMap,benefits:viewBenefits,edu:viewEdu};
 let cur="growth";
-function route(){const h=(location.hash||"").replace("#","");cur=VIEWS[h]?h:"growth";
+function route(force){const h=(typeof force==="string"&&force)||(location.hash||"").replace("#","");cur=VIEWS[h]?h:"growth";
   $$(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+cur));
   $$(".tabs a").forEach(a=>{const on=a.dataset.v===cur;a.classList.toggle("on",on);on?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current");});
   try{VIEWS[cur]();}catch(e){console.error(e);}}
@@ -1819,7 +1819,10 @@ function boot(){
     const nm=(K.child&&K.child.name)||"아이";S.kids.splice(S.active,1);S.active=Math.max(0,Math.min(S.active,S.kids.length-1));syncK();resetRQ();save();closeSheets();renderAll();toast(`${nm} 정보를 삭제했어요`);if(!S.kids.length)setTimeout(()=>openProfile("add"),400);};
   $("#exXlsx").onclick=exportXlsx;$("#exMail").onclick=exportMail;$("#exCopy").onclick=copyText;
   document.addEventListener("click",e=>{if(e.target.closest(".js-profile"))openProfile(K.child?"edit":"add");});
-  window.addEventListener("hashchange",route);
+  window.addEventListener("hashchange",()=>route());
+  /* srcdoc로 삽입된 화면(Streamlit 등)에서는 #링크가 부모 주소로 해석돼 탭 이동이 안 되므로 직접 전환 */
+  document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a||a.hasAttribute("data-fly"))return;const v=a.getAttribute("href").slice(1);if(!VIEWS[v])return;
+    if(location.protocol==="about:"||location.href.indexOf("about:")===0){e.preventDefault();route(v);window.scrollTo(0,0);}});
   ensureToday();
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&popDay)closeDay();});
   $("#dayPop").addEventListener("click",e=>{if(e.target.id==="dayPop")closeDay();});
